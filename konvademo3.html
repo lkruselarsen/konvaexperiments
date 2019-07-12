@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/konva@3.3.3/konva.min.js"></script>
+    <meta charset="utf-8" />
+    <title>Konva Shape Redraw Demo</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #f0f0f0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"></div>
+    <script>
+      var xs = [122, 122, 122, 122, 122, 122, 122, 122, 122, 137, 152, 167, 182, 212, 212, 212, 212, 212, 212, 212, 212, 212, 258, 258, 258, 258, 258, 258, 258, 258, 258, 273, 288, 303, 318, 273, 288, 303, 318, 273, 288, 303, 318, 364, 364, 364, 364, 364, 364, 364, 364, 364, 379, 394, 411, 426, 456, 456, 456, 456, 456, 456, 456, 456, 456, 471, 487, 503, 518, 593, 608, 623, 638, 644, 647, 646, 643, 636, 626, 611, 595, 579, 563, 550, 539, 533, 531, 534, 539, 546, 556, 569, 577, 593, 608, 623, 638, 644, 647, 646, 643, 636, 626, 611, 595, 579, 563, 550, 539, 533, 531, 534, 539, 546, 556, 569, 577];
+      var ys = [182, 197, 212, 227, 242, 257, 272, 288, 304, 243, 243, 243, 243, 182, 197, 212, 227, 242, 257, 272, 288, 304, 182, 197, 212, 227, 242, 257, 272, 288, 304, 182, 182, 182, 182, 242, 242, 242, 242, 302, 302, 302, 302, 182, 197, 212, 227, 242, 257, 272, 288, 304, 303, 303, 303, 303, 182, 197, 212, 227, 242, 257, 272, 288, 304, 303, 303, 303, 303, 181, 186, 194, 205, 219, 234, 250, 265, 280, 293, 304, 307, 304, 301, 292, 277, 262, 246, 231, 216, 202, 192, 185, 181, 181, 186, 194, 205, 219, 234, 250, 265, 280, 293, 304, 307, 304, 301, 292, 277, 262, 246, 231, 216, 202, 192, 185, 181];
+      var currentTrigger = 0;
+      var colours = ['#b4314a', '#b73c53', '#b4475b', '#ac4f60', '#a25866', '#9a5d68', '#8f5f68', '#856067', '#7b6161', '#726363', '#675f5f', '#7b7b7b7'];
+      var width = window.innerWidth;
+      var height = window.innerHeight;
+      var boxId = 0;
+      var currentBoxId = 0;
+      var currentBox;
+
+      var amplitude = 10;
+      var period = 2;
+
+      function getRandomInt(max) {
+          return Math.floor(Math.random() * Math.floor(max));
+        }
+
+      var stage = new Konva.Stage({
+        container: 'container',
+        width: width,
+        height: height
+      });
+
+      var centerX = 100;
+
+      var layer = new Konva.Layer();
+      stage.add(layer);
+
+      var BOX_SIZE = 15;
+      var box;
+      // generate boxes
+      for (var ix = 0; ix < width / BOX_SIZE; ix++) {
+        for (var iy = 0; iy < height / BOX_SIZE; iy++) {
+          box = new Konva.Rect({
+            x: ix * BOX_SIZE,
+            y: iy * BOX_SIZE,
+            width: BOX_SIZE - 1,
+            height: BOX_SIZE - 1,
+            fill: '#7b7b7b',
+            stroke: 'white',
+            draggable: true,
+            id: boxId,
+
+            getX: function(){
+              return this.x;
+            },
+            setColour: function(){
+              for (var i = 0; i < colours.length; i++){
+                  setTimeout(function doColour(){
+                    this.fill = colours[i];
+                  }, 100);
+              }
+            }
+          });
+          boxId++;
+          layer.add(box);
+        }
+      }
+
+      // we have animation that do nothing in some cases
+      var anim = new Konva.Animation(function(frame) {
+        var locx = xs[currentTrigger];
+        var locy = ys[currentTrigger];
+        localBoxX = currentBox.getX();
+        if (frame.time % (period * 2) < period) {
+          for (var i = 0; i < 7; i++){
+              // regular update
+              setTimeout(
+              function doFrame(){
+              (currentBox).x(
+              amplitude * Math.cos((frame.time * 2 * Math.PI) / period) + locx
+              );
+              (currentBox).y(
+              amplitude * Math.cos((frame.time * 2 * Math.PI) / period) + locy
+              );
+              locx = locx + (getRandomInt(3)-1);
+              locy = locy + (getRandomInt(3)-1);
+              console.log('current trigger is now: ' + currentTrigger);
+            }, 50);
+
+          }
+          if (currentTrigger < xs.length){
+              currentTrigger = currentTrigger + 1;
+          }
+          else{
+              currentTrigger = 0;
+          }
+//          anim.stop();
+
+        } else {
+          // this is "pause" phase
+          // we don't need update layer in this case
+          // so return false and Konva will skip layer draw
+          return false;
+        }
+      }, layer);
+      layer.draw();
+
+      // as all boxes stay separately with no overlap
+      // and they have no opacity
+      // we can call 'box.draw()' and we will have expected result
+      // REMEMBER that is this case box will be drawn on top of existing layer
+      // without clearing
+      layer.on('mouseover', function(evt) {
+        var box = evt.target;
+        box.fill('#E5FF80');
+        box.draw();
+        currentBoxId = box.id;
+        currentBox = box;
+        anim.start();
+        console.log('currentBox is: ' + currentBox);
+        console.log('BoxId is: ' + boxId);
+      });
+      layer.on('mouseout', function(evt) {
+        var box = evt.target;
+        box.fill('darkgrey');
+        box.draw();
+      });
+    </script>
+  </body>
+</html>
